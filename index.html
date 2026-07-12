@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול - הדרך להתחיל מחדש</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; background-color: #f8fafc; }
+        .tab-content { display: none; }
+        .active-tab { display: block; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Navigation -->
+        <nav class="flex gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+            <button onclick="switchTab('user-form')" class="px-4 py-2 rounded-lg bg-rose-600 text-white font-bold">הרשמה לקורס</button>
+            <button onclick="switchTab('admin-panel')" class="px-4 py-2 rounded-lg hover:bg-slate-100 font-bold">לוח מנהל (אבישי)</button>
+            <button onclick="switchTab('ai-bot')" class="px-4 py-2 rounded-lg hover:bg-slate-100 font-bold text-rose-600">עוזר חכם (AI)</button>
+        </nav>
+
+        <!-- User Form -->
+        <div id="user-form" class="tab-content active-tab grid md:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">פרטי הרשמה</h2>
+                <div class="space-y-4">
+                    <input type="text" id="userName" placeholder="שם מלא" class="w-full p-3 border rounded-lg">
+                    <input type="number" id="userCount" placeholder="מספר משתתפים" class="w-full p-3 border rounded-lg">
+                    <div class="p-4 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-200">
+                        <strong>תזכורת תשלום:</strong> הקורס מתחיל ברביעי הקרוב ומסתיים בשבת בעוד שבועיים. החל מהמפגש השני: 1 ש"ח לאדם.
+                    </div>
+                    <button onclick="submitInvite()" class="w-full bg-rose-600 text-white p-3 rounded-lg font-bold">שליחת הרשמה</button>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-rose-500">
+                <h3 class="text-xl font-bold">הדרך להתחיל מחדש</h3>
+                <p class="mt-4 text-slate-600">קורס העוסק בכבוד הדדי ובשיפור התקשורת.</p>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="admin-panel" class="tab-content">
+            <div id="loginSection" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm text-center">
+                <h2 class="text-2xl font-bold mb-4">כניסת מנהל</h2>
+                <input type="text" id="adminUser" placeholder="שם משתמש" class="w-full p-3 mb-3 border rounded-lg">
+                <input type="password" id="adminPass" placeholder="סיסמה" class="w-full p-3 mb-4 border rounded-lg">
+                <button onclick="loginAdmin()" class="w-full bg-slate-800 text-white p-3 rounded-lg font-bold">התחבר</button>
+            </div>
+            <div id="adminContent" class="hidden">
+                <h2 class="text-2xl font-bold mb-4">ניהול רשומים</h2>
+                <button onclick="logoutAdmin()" class="mb-4 text-sm text-red-600 underline">התנתק</button>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="w-full text-right">
+                        <thead class="bg-slate-100 border-b">
+                            <tr>
+                                <th class="p-4">שם</th>
+                                <th class="p-4">משתתפים</th>
+                                <th class="p-4">סטטוס</th>
+                                <th class="p-4">פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Bot -->
+        <div id="ai-bot" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm p-6 h-[500px] flex flex-col border border-rose-200">
+                <h2 class="text-xl font-bold mb-4 text-rose-600">בוט AI - עוזר אישי למנהל וללקוחות</h2>
+                <div id="chatBox" class="flex-1 overflow-y-auto mb-4 space-y-4 p-2 bg-slate-50 rounded-lg border"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="chatInput" placeholder="שאל שאלה או בקש משל..." class="flex-1 p-3 border rounded-lg">
+                    <button onclick="askAI()" class="bg-rose-600 text-white px-6 rounded-lg font-bold">שלח</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let invites = JSON.parse(localStorage.getItem('invites') || '[]');
+        let isAdmin = false;
+        let chatHistory = [];
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-tab'));
+            document.getElementById(tabId).classList.add('active-tab');
+        }
+
+        function loginAdmin() {
+            const user = document.getElementById('adminUser').value;
+            const pass = document.getElementById('adminPass').value;
+            if(user === 'אבישי' && pass === '1234') {
+                isAdmin = true;
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('adminContent').classList.remove('hidden');
+                renderAdminTable();
+            } else {
+                alert('שם משתמש או סיסמה שגויים');
+            }
+        }
+
+        function logoutAdmin() {
+            isAdmin = false;
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('adminContent').classList.add('hidden');
+        }
+
+        function submitInvite() {
+            const name = document.getElementById('userName').value;
+            const count = document.getElementById('userCount').value;
+            if(!name || !count) return alert('נא למלא את כל הפרטים');
+            invites.push({ id: Date.now(), name, count, status: 'ממתין' });
+            localStorage.setItem('invites', JSON.stringify(invites));
+            renderAdminTable();
+            alert('ההרשמה נקלטה בהצלחה!');
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = invites.map(inv => `
+                <tr class="border-b">
+                    <td class="p-4">${inv.name}</td>
+                    <td class="p-4">${inv.count}</td>
+                    <td class="p-4 font-bold ${inv.status === 'אושר' ? 'text-green-600' : 'text-orange-600'}">${inv.status}</td>
+                    <td class="p-4 space-x-2">
+                        <button onclick="updateStatus(${inv.id}, 'אושר')" class="bg-green-500 text-white px-2 py-1 rounded">אישור</button>
+                        <button onclick="deleteInvite(${inv.id})" class="bg-red-500 text-white px-2 py-1 rounded">מחיקה</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStatus(id, status) {
+            invites = invites.map(i => i.id === id ? {...i, status} : i);
+            localStorage.setItem('invites', JSON.stringify(invites));
+            renderAdminTable();
+        }
+
+        function deleteInvite(id) {
+            invites = invites.filter(i => i.id !== id);
+            localStorage.setItem('invites', JSON.stringify(invites));
+            renderAdminTable();
+        }
+
+        async function askAI() {
+            const input = document.getElementById('chatInput').value;
+            const chatBox = document.getElementById('chatBox');
+            if(!input) return;
+
+            // Add user message to history
+            chatHistory.push({ role: 'user', parts: [{ text: input }] });
+            chatBox.innerHTML += `<div class="bg-rose-100 p-2 rounded mb-2 text-right">אתה: ${input}</div>`;
+            document.getElementById('chatInput').value = '';
+
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            
+            const systemPrompt = isAdmin 
+                ? "אתה עוזר חכם אישי של אבישי, מנהל קורס 'הדרך להתחיל מחדש'. אתה בקיא בכיבוד, הלכות, תורה, משניות, פרקי אבות, ומשלים ונמשלים. עליך לענות בצורה חכמה ומעמיקה, וכשמתבקש משל ונמשל - עליך לחבר אחד מקורי ומתאים."
+                : "אתה עוזר חכם של קורס 'הדרך להתחיל מחדש'. ענה על שאלות בנושאי הקורס, כיבוד, תורה וערכים בצורה אדיבה ומזמינה.";
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: chatHistory,
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                const result = await response.json();
+                const aiResponse = result.candidates[0].content.parts[0].text;
+                
+                // Add AI response to history
+                chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+                
+                chatBox.innerHTML += `<div class="bg-slate-200 p-2 rounded mb-2 text-left">בוט AI: ${aiResponse}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (error) {
+                chatBox.innerHTML += `<div class="bg-red-100 p-2 rounded mb-2 text-left">מצטער, הייתה שגיאה בחיבור ל-AI.</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
